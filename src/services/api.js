@@ -2,8 +2,8 @@
 import axios from "axios";
 
 export const api = axios.create({
-  // baseURL: "https://capyngen-backendv2-1.onrender.com", // ✅ base without /api/blogs
-  baseURL: "http://localhost:4000",
+  baseURL: "https://capyngen-backendv2-1.onrender.com", // ✅ base without /api/blogs
+  // baseURL: "http://localhost:4000",
 
   headers: { "Content-Type": "application/json" },
 });
