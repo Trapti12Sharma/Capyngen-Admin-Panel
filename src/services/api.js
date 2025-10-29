@@ -2,8 +2,7 @@
 import axios from "axios";
 
 export const api = axios.create({
-  baseURL: "https://capyngen-backendv2-1.onrender.com", // ✅ base without /api/blogs
-  // baseURL: "http://localhost:4000",
+  baseURL: import.meta.env.VITE_API_BASE_URL,
 
   headers: { "Content-Type": "application/json" },
 });
