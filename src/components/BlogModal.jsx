@@ -9,6 +9,9 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
     content: "",
     image: "",
     tags: "",
+    category: "",
+    group: "",
+    date: "",
   });
 
   const [preview, setPreview] = useState("");
@@ -23,6 +26,9 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
         content: initial.content || "",
         image: initial.image || "",
         tags: (initial.tags || []).join(", "),
+        category: initial.category || "",
+        group: initial.group || "",
+        date: initial.date || "",
       });
       setPreview(initial.image || "");
     } else {
@@ -33,6 +39,9 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
         content: "",
         image: "",
         tags: "",
+        category: "",
+        group: "",
+        date: "",
       });
       setPreview("");
     }
@@ -44,12 +53,11 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
     setForm((f) => ({ ...f, [name]: value }));
   };
 
-  // ✅ Handle image preview + upload
+  // Image upload
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    // show instant local preview before uploading
     setPreview(URL.createObjectURL(file));
 
     const formData = new FormData();
@@ -73,9 +81,17 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
     }
   };
 
-  // ✅ Handle submit
+  // Submit
   const handleSubmit = () => {
-    if (!form.title || !form.author || !form.description || !form.content)
+    if (
+      !form.title ||
+      !form.author ||
+      !form.description ||
+      !form.content ||
+      !form.category ||
+      !form.group ||
+      !form.date
+    )
       return onSave(null, "Please fill all required fields");
 
     const payload = {
@@ -83,14 +99,17 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
       author: form.author.trim(),
       description: form.description.trim(),
       content: form.content.trim(),
-      image: form.image.trim(), // uploaded image URL
+      image: form.image.trim(),
+      category: form.category.trim(),
+      group: form.group.trim(),
+      date: form.date.trim(),
       tags: form.tags
         .split(",")
         .map((t) => t.trim())
         .filter(Boolean),
     };
 
-    onSave(payload); // Pass data to parent for saving to DB
+    onSave(payload);
     setPreview("");
   };
 
@@ -125,7 +144,6 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
             value={form.title}
             onChange={handleChange}
             className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-            placeholder="Blog title"
           />
         </div>
 
@@ -137,7 +155,40 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
             value={form.author}
             onChange={handleChange}
             className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-            placeholder="Your name"
+          />
+        </div>
+
+        {/* Category */}
+        <div className="space-y-1">
+          <label className="text-sm text-neutral-600">Category *</label>
+          <input
+            name="category"
+            value={form.category}
+            onChange={handleChange}
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2"
+          />
+        </div>
+
+        {/* Group */}
+        <div className="space-y-1">
+          <label className="text-sm text-neutral-600">Group *</label>
+          <input
+            name="group"
+            value={form.group}
+            onChange={handleChange}
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2"
+          />
+        </div>
+
+        {/* Date */}
+        <div className="space-y-1">
+          <label className="text-sm text-neutral-600">Date *</label>
+          <input
+            type="date"
+            name="date"
+            value={form.date}
+            onChange={handleChange}
+            className="w-full rounded-xl border border-neutral-300 px-3 py-2"
           />
         </div>
 
@@ -152,7 +203,6 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
             onChange={handleChange}
             rows={2}
             className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-            placeholder="Short summary"
           />
         </div>
 
@@ -165,11 +215,10 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
             onChange={handleChange}
             rows={6}
             className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-            placeholder="Full content (supports HTML)"
           />
         </div>
 
-        {/* Image Upload */}
+        {/* Image */}
         <div className="space-y-1">
           <label className="text-sm text-neutral-600">Upload Image *</label>
           <input
@@ -178,27 +227,23 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
             onChange={handleImageUpload}
             className="w-full rounded-xl border border-neutral-300 px-3 py-2"
           />
-          {/* ✅ Show preview */}
           {preview && (
             <img
               src={preview}
               alt="Preview"
-              className="mt-2 w-full h-40 object-cover rounded-lg border border-neutral-300"
+              className="mt-2 w-full h-40 object-cover rounded-lg border"
             />
           )}
         </div>
 
         {/* Tags */}
         <div className="space-y-1">
-          <label className="text-sm text-neutral-600">
-            Tags (comma separated)
-          </label>
+          <label className="text-sm text-neutral-600">Tags</label>
           <input
             name="tags"
             value={form.tags}
             onChange={handleChange}
             className="w-full rounded-xl border border-neutral-300 px-3 py-2"
-            placeholder="React, JavaScript"
           />
         </div>
       </div>

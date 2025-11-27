@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import StatsCards from "./StatsCards";
+import { motion } from "framer-motion";
 import CareerTable from "./CareerTable";
 import CareerModal from "./CareerModal";
 import EmptyState from "./EmptyState";
+import ConfirmModal from "./ConfirmModal";
 import { CareerService } from "../services/careerService";
 import { useToast } from "../hooks/useToast";
 import { getErrorMessage } from "../services/api";
@@ -14,10 +15,11 @@ export default function CareerAdminPanel() {
   const [openModal, setOpenModal] = useState(false);
   const [editing, setEditing] = useState(null);
   const [deletedCount, setDeletedCount] = useState(0);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedCareer, setSelectedCareer] = useState(null);
 
   const adminName = "Admin";
 
-  // 🔹 Fetch all career openings
   const fetchCareers = async () => {
     try {
       setLoading(true);
@@ -34,7 +36,6 @@ export default function CareerAdminPanel() {
     fetchCareers();
   }, []);
 
-  // 🔹 Create new job opening
   const handleCreate = async (payload, errMsg) => {
     if (errMsg) return push("error", errMsg);
     try {
@@ -47,7 +48,6 @@ export default function CareerAdminPanel() {
     }
   };
 
-  // 🔹 Edit existing job
   const handleEdit = async (payload, errMsg) => {
     if (errMsg) return push("error", errMsg);
     try {
@@ -63,72 +63,76 @@ export default function CareerAdminPanel() {
     }
   };
 
-  // 🔹 Delete job opening
-  const handleDelete = async (career) => {
-    if (!confirm(`Delete job "${career.title}"?`)) return;
+  // ✅ PROFESSIONAL DELETE FLOW
+  const handleDelete = (career) => {
+    setSelectedCareer(career);
+    setConfirmOpen(true);
+  };
+
+  const confirmDelete = async () => {
     try {
-      await CareerService.remove(career._id);
-      setCareers((prev) => prev.filter((x) => x._id !== career._id));
+      await CareerService.remove(selectedCareer._id);
+      setCareers((prev) => prev.filter((x) => x._id !== selectedCareer._id));
       setDeletedCount((c) => c + 1);
       push("success", "Job deleted successfully");
     } catch (err) {
       push("error", getErrorMessage(err));
+    } finally {
+      setConfirmOpen(false);
+      setSelectedCareer(null);
     }
   };
 
   const totalCareers = useMemo(() => careers.length, [careers]);
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* Top header */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black text-white">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl bg-gradient-to-r from-emerald-600 to-teal-700 p-8 shadow-xl mb-10 flex justify-between"
+        >
           <div>
-            <h1 className="text-2xl font-semibold">Career Admin Panel</h1>
-            <p className="text-sm text-neutral-500">
-              Manage, edit, and delete job openings easily
+            <h1 className="text-3xl font-bold">Welcome back, {adminName} 👋</h1>
+            <p className="text-sm opacity-90 mt-1">
+              Manage all job openings from one dashboard
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => {
-                setEditing(null);
-                setOpenModal(true);
-              }}
-              className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-black shadow-sm"
-            >
-              + Create Job
-            </button>
+          <button
+            onClick={() => {
+              setEditing(null);
+              setOpenModal(true);
+            }}
+            className="px-6 py-2 rounded-xl bg-black/80 hover:bg-black"
+          >
+            + Create Job
+          </button>
+        </motion.div>
+
+        <div className="grid grid-cols-3 gap-6 mb-10">
+          <div className="p-6 rounded-2xl bg-[#111827] shadow-lg">
+            <p>Total Jobs</p>
+            <p className="text-3xl font-bold">{totalCareers}</p>
+          </div>
+          <div className="p-6 rounded-2xl bg-[#111827] shadow-lg">
+            <p>Deleted Jobs</p>
+            <p className="text-3xl font-bold">{deletedCount}</p>
+          </div>
+          <div className="p-6 rounded-2xl bg-[#111827] shadow-lg">
+            <p>Status</p>
+            <p className="text-green-400">Online ✅</p>
           </div>
         </div>
 
-        {/* Stats Section */}
-        <StatsCards
-          totalBlogs={totalCareers}
-          adminName={adminName}
-          deletedCount={deletedCount}
-        />
-
-        {/* Job Listings Table */}
-        <div className="mt-6">
+        <div className="mt-10 bg-[#020617] p-6 rounded-3xl shadow-2xl">
           {loading ? (
-            <div className="animate-pulse h-40 rounded-2xl bg-neutral-200/60 dark:bg-neutral-800/40" />
-          ) : careers.length === 0 ? (
-            <EmptyState
-              action={
-                <button
-                  onClick={() => setOpenModal(true)}
-                  className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-black"
-                >
-                  Create your first job
-                </button>
-              }
-            />
+            <div className="animate-pulse h-52 bg-white/10 rounded-xl" />
           ) : (
             <CareerTable
               careers={careers}
-              onEdit={(career) => {
-                setEditing(career);
+              onEdit={(c) => {
+                setEditing(c);
                 setOpenModal(true);
               }}
               onDelete={handleDelete}
@@ -137,7 +141,6 @@ export default function CareerAdminPanel() {
         </div>
       </div>
 
-      {/* Create / Edit Modal */}
       <CareerModal
         open={openModal}
         onClose={() => {
@@ -146,6 +149,16 @@ export default function CareerAdminPanel() {
         }}
         onSave={editing ? handleEdit : handleCreate}
         initial={editing}
+      />
+
+      {/* ✅ PROFESSIONAL CONFIRM POPUP */}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Delete Job?"
+        message={`Are you sure you want to delete "${selectedCareer?.title}"?`}
+        confirmText="Yes, Delete"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={confirmDelete}
       />
     </div>
   );

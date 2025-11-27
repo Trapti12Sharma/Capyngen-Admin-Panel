@@ -1,8 +1,9 @@
 import React, { useEffect, useMemo, useState } from "react";
-import StatsCards from "./StatsCards";
+import { motion } from "framer-motion";
 import BlogTable from "./BlogTable";
 import BlogModal from "./BlogModal";
 import EmptyState from "./EmptyState";
+import ConfirmModal from "./ConfirmModal";
 import { BlogService } from "../services/blogService";
 import { useToast } from "../hooks/useToast";
 import { getErrorMessage } from "../services/api";
@@ -15,17 +16,18 @@ export default function AdminPanel() {
   const [editing, setEditing] = useState(null);
   const [deletedCount, setDeletedCount] = useState(0);
 
-  const adminName = "Admin"; // static name, can later come from auth session
+  // ✅ NEW FOR PROFESSIONAL DELETE
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [selectedBlog, setSelectedBlog] = useState(null);
 
-  // ✅ Fetch all blogs (GET)
+  const adminName = "Admin";
+
   const fetchBlogs = async () => {
     try {
       setLoading(true);
       const data = await BlogService.list();
-      console.log("Fetched blogs:", data);
       setBlogs(data);
     } catch (err) {
-      console.error("Fetch error:", err);
       push("error", getErrorMessage(err));
     } finally {
       setLoading(false);
@@ -36,7 +38,7 @@ export default function AdminPanel() {
     fetchBlogs();
   }, []);
 
-  // ✅ Create new blog (POST)
+  // ✅ CREATE → SAME AS BEFORE (TOAST ONLY)
   const handleCreate = async (payload, errMsg) => {
     if (errMsg) return push("error", errMsg);
     try {
@@ -45,16 +47,14 @@ export default function AdminPanel() {
       setOpenModal(false);
       push("success", "✅ Blog created successfully");
     } catch (err) {
-      console.error("Create blog error:", err);
       push("error", getErrorMessage(err));
     }
   };
 
-  // ✅ Update existing blog (PUT)
+  // ✅ EDIT → SAME AS BEFORE (TOAST ONLY)
   const handleEdit = async (payload, errMsg) => {
     if (errMsg) return push("error", errMsg);
     try {
-      console.log("Updating blog:", editing._id, payload);
       const updated = await BlogService.update(editing._id, payload);
       setBlogs((b) =>
         b.map((x) => (x._id === editing._id ? { ...x, ...updated } : x))
@@ -63,70 +63,86 @@ export default function AdminPanel() {
       setOpenModal(false);
       push("success", "✏️ Blog updated successfully");
     } catch (err) {
-      console.error("Update blog error:", err);
       push("error", getErrorMessage(err));
     }
   };
 
-  // ✅ Delete blog (DELETE)
-  const handleDelete = async (blog) => {
-    if (!confirm(`Are you sure you want to delete "${blog.title}"?`)) return;
+  // ✅ DELETE → OPEN PROFESSIONAL MODAL (NO confirm())
+  const handleDelete = (blog) => {
+    setSelectedBlog(blog);
+    setConfirmOpen(true);
+  };
+
+  // ✅ ACTUAL DELETE AFTER CONFIRM
+  const confirmDelete = async () => {
     try {
-      console.log("Deleting blog:", blog._id);
-      await BlogService.remove(blog._id);
-      setBlogs((b) => b.filter((x) => x._id !== blog._id));
+      await BlogService.remove(selectedBlog._id);
+      setBlogs((b) => b.filter((x) => x._id !== selectedBlog._id));
       setDeletedCount((c) => c + 1);
       push("success", "🗑️ Blog deleted successfully");
     } catch (err) {
-      console.error("Delete blog error:", err);
       push("error", getErrorMessage(err));
+    } finally {
+      setConfirmOpen(false);
+      setSelectedBlog(null);
     }
   };
 
-  // ✅ Derived state
   const totalBlogs = useMemo(() => blogs.length, [blogs]);
 
   return (
-    <div className="min-h-screen bg-neutral-50 dark:bg-neutral-950 text-neutral-900 dark:text-neutral-100">
-      <div className="max-w-6xl mx-auto p-6">
-        {/* 🔹 Header */}
-        <div className="flex items-center justify-between mb-6">
+    <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black text-white">
+      <div className="max-w-7xl mx-auto px-6 py-10">
+        {/* ✅ HERO */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="rounded-3xl bg-gradient-to-r from-indigo-600 to-purple-700 p-8 shadow-xl mb-10 flex justify-between"
+        >
           <div>
-            <h1 className="text-2xl font-semibold">Blog Admin Panel</h1>
-            <p className="text-sm text-neutral-500">
-              Manage, edit, and delete your blogs easily
+            <h1 className="text-3xl font-bold">Welcome back, {adminName} 👋</h1>
+            <p className="text-sm opacity-90 mt-1">
+              Manage all your blogs from one powerful dashboard
             </p>
           </div>
-          <div>
-            <button
-              onClick={() => {
-                setEditing(null);
-                setOpenModal(true);
-              }}
-              className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-black shadow-sm transition"
-            >
-              + Create Blog
-            </button>
+
+          <button
+            onClick={() => {
+              setEditing(null);
+              setOpenModal(true);
+            }}
+            className="px-6 py-2 rounded-xl bg-black/80 hover:bg-black"
+          >
+            + Create Blog
+          </button>
+        </motion.div>
+
+        {/* ✅ STATS */}
+        <div className="grid grid-cols-3 gap-6 mb-10">
+          <div className="p-6 rounded-2xl bg-[#111827] shadow-lg">
+            <p>Total Blogs</p>
+            <p className="text-3xl font-bold">{totalBlogs}</p>
+          </div>
+          <div className="p-6 rounded-2xl bg-[#111827] shadow-lg">
+            <p>Deleted Blogs</p>
+            <p className="text-3xl font-bold">{deletedCount}</p>
+          </div>
+          <div className="p-6 rounded-2xl bg-[#111827] shadow-lg">
+            <p>Status</p>
+            <p className="text-green-400">Online ✅</p>
           </div>
         </div>
 
-        {/* 🔹 Stats */}
-        <StatsCards
-          totalBlogs={totalBlogs}
-          adminName={adminName}
-          deletedCount={deletedCount}
-        />
-
-        {/* 🔹 Table */}
-        <div className="mt-6">
+        {/* ✅ TABLE */}
+        <div className="mt-10 bg-[#020617] p-6 rounded-3xl shadow-2xl">
           {loading ? (
-            <div className="animate-pulse h-40 rounded-2xl bg-neutral-200/60 dark:bg-neutral-800/40" />
+            <div className="animate-pulse h-52 rounded-xl bg-white/10" />
           ) : blogs.length === 0 ? (
             <EmptyState
               action={
                 <button
                   onClick={() => setOpenModal(true)}
-                  className="px-4 py-2 rounded-xl bg-neutral-900 text-white hover:bg-black transition"
+                  className="px-6 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700"
                 >
                   Create your first blog
                 </button>
@@ -139,13 +155,13 @@ export default function AdminPanel() {
                 setEditing(b);
                 setOpenModal(true);
               }}
-              onDelete={handleDelete}
+              onDelete={handleDelete} // ✅ NOW PROFESSIONAL
             />
           )}
         </div>
       </div>
 
-      {/* 🔹 Modal for Create / Edit */}
+      {/* ✅ BLOG MODAL */}
       <BlogModal
         open={openModal}
         onClose={() => {
@@ -154,6 +170,16 @@ export default function AdminPanel() {
         }}
         onSave={editing ? handleEdit : handleCreate}
         initial={editing}
+      />
+
+      {/* ✅ PROFESSIONAL CONFIRM DELETE POPUP */}
+      <ConfirmModal
+        open={confirmOpen}
+        title="Delete Blog?"
+        message={`Are you sure you want to delete "${selectedBlog?.title}"?`}
+        confirmText="Yes, Delete"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={confirmDelete}
       />
     </div>
   );
