@@ -16,6 +16,8 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
 
   const [preview, setPreview] = useState("");
 
+  const [uploading, setUploading] = useState(false);
+
   // Populate form if editing
   useEffect(() => {
     if (initial) {
@@ -58,6 +60,7 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
     const file = e.target.files[0];
     if (!file) return;
 
+    setUploading(true);
     setPreview(URL.createObjectURL(file));
 
     const formData = new FormData();
@@ -71,6 +74,7 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
           body: formData,
         }
       );
+
       const data = await res.json();
 
       if (data?.url) {
@@ -78,11 +82,17 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
       }
     } catch (err) {
       console.error("Image upload failed:", err);
+    } finally {
+      setUploading(false);
     }
   };
 
   // Submit
   const handleSubmit = () => {
+    if (uploading) {
+      return alert("Please wait, image is uploading...");
+    }
+
     if (
       !form.title ||
       !form.author ||
@@ -91,18 +101,23 @@ export default function BlogModal({ open, onClose, onSave, initial }) {
       !form.category ||
       !form.group ||
       !form.date
-    )
+    ) {
       return onSave(null, "Please fill all required fields");
+    }
+
+    if (!form.image) {
+      return alert("Please upload image first");
+    }
 
     const payload = {
       title: form.title.trim(),
       author: form.author.trim(),
       description: form.description.trim(),
       content: form.content.trim(),
-      image: form.image.trim(),
+      image: form.image, // ✅ NOW GUARANTEED
       category: form.category.trim(),
       group: form.group.trim(),
-      date: form.date.trim(),
+      date: form.date,
       tags: form.tags
         .split(",")
         .map((t) => t.trim())
