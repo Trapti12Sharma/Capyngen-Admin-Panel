@@ -1,40 +1,90 @@
 import React from "react";
-import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from "react-router-dom";
+
 import AdminPanel from "./components/AdminPanel";
 import CareerAdminPanel from "./components/CareerAdminPanel";
 import AdminLanding from "./components/AdminLanding";
-import { ToastProvider } from "./hooks/useToast";
 import ViewReports from "./components/ViewReports";
 import Settings from "./components/Settings";
+import AdminLogin from "./components/AdminLogin";
+import AdminNavbar from "./components/AdminNavbar";
+
+import { ToastProvider } from "./hooks/useToast";
+import { isAdminLoggedIn } from "./services/authService";
+
+// 🔐 Protected Route
+const ProtectedRoute = ({ children }) => {
+  const loggedIn = isAdminLoggedIn();
+
+  if (!loggedIn) {
+    return <Navigate to="/admin-login" replace />;
+  }
+
+  return children;
+};
 
 export default function App() {
   return (
     <ToastProvider>
       <Router>
-        {/* ✅ TOP NAVBAR */}
-        <div className="p-4 flex gap-6 bg-neutral-100 dark:bg-neutral-900">
-          <Link to="/" className="text-blue-600">
-            Admin Home
-          </Link>
-
-          <Link to="/blogs" className="text-blue-600">
-            Blogs Admin
-          </Link>
-
-          <Link to="/careers" className="text-blue-600">
-            Careers Admin
-          </Link>
-        </div>
+        {/* ✅ NAVBAR (ONLY AFTER LOGIN) */}
+        {isAdminLoggedIn() && <AdminNavbar />}
 
         {/* ✅ ROUTES */}
         <Routes>
-          {/* ✅ THIS MAKES YOUR DASHBOARD THE LANDING PAGE */}
-          <Route path="/" element={<AdminLanding />} />
+          {/* 🔓 PUBLIC */}
+          <Route path="/admin-login" element={<AdminLogin />} />
 
-          <Route path="/blogs" element={<AdminPanel />} />
-          <Route path="/careers" element={<CareerAdminPanel />} />
-          <Route path="/reports" element={<ViewReports />} />
-          <Route path="/settings" element={<Settings />} />
+          {/* 🔐 PROTECTED */}
+          <Route
+            path="/"
+            element={
+              <ProtectedRoute>
+                <AdminLanding />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/blogs"
+            element={
+              <ProtectedRoute>
+                <AdminPanel />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/careers"
+            element={
+              <ProtectedRoute>
+                <CareerAdminPanel />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <ViewReports />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
         </Routes>
       </Router>
     </ToastProvider>

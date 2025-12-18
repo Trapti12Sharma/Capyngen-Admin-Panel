@@ -1,15 +1,18 @@
 import { motion } from "framer-motion";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { BlogService } from "../services/blogService";
 import { CareerService } from "../services/careerService";
+import { logoutAdmin } from "../services/authService";
 
 export default function AdminLanding() {
   const adminName = "Admin";
+  const navigate = useNavigate();
+
   const [totalBlogs, setTotalBlogs] = useState(0);
   const [totalCareers, setTotalCareers] = useState(0);
 
-  // ✅ FETCH COUNTS DYNAMICALLY
+  // ✅ FETCH COUNTS
   useEffect(() => {
     const fetchCounts = async () => {
       try {
@@ -25,8 +28,15 @@ export default function AdminLanding() {
     fetchCounts();
   }, []);
 
+  // ✅ LOGOUT
+  const handleLogout = () => {
+    logoutAdmin();
+    navigate("/admin-login", { replace: true });
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#0f172a] via-[#020617] to-black text-white">
+      {/* ✅ MAIN CONTENT */}
       <div className="max-w-7xl mx-auto px-6 py-10">
         {/* ✅ HERO */}
         <motion.div
