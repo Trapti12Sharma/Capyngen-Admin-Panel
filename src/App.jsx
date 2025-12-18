@@ -4,6 +4,7 @@ import {
   Routes,
   Route,
   Navigate,
+  useLocation,
 } from "react-router-dom";
 
 import AdminPanel from "./components/AdminPanel";
@@ -28,64 +29,77 @@ const ProtectedRoute = ({ children }) => {
   return children;
 };
 
+// ✅ Wrapper to control navbar visibility
+function AppLayout() {
+  const location = useLocation();
+  const loggedIn = isAdminLoggedIn();
+
+  // ❌ Navbar should NOT show on login page
+  const hideNavbar = location.pathname === "/admin-login";
+
+  return (
+    <>
+      {loggedIn && !hideNavbar && <AdminNavbar />}
+
+      <Routes>
+        {/* 🔓 PUBLIC */}
+        <Route path="/admin-login" element={<AdminLogin />} />
+
+        {/* 🔐 PROTECTED */}
+        <Route
+          path="/"
+          element={
+            <ProtectedRoute>
+              <AdminLanding />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/blogs"
+          element={
+            <ProtectedRoute>
+              <AdminPanel />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/careers"
+          element={
+            <ProtectedRoute>
+              <CareerAdminPanel />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/reports"
+          element={
+            <ProtectedRoute>
+              <ViewReports />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
+      </Routes>
+    </>
+  );
+}
+
 export default function App() {
   return (
     <ToastProvider>
       <Router>
-        {/* ✅ NAVBAR (ONLY AFTER LOGIN) */}
-        {isAdminLoggedIn() && <AdminNavbar />}
-
-        {/* ✅ ROUTES */}
-        <Routes>
-          {/* 🔓 PUBLIC */}
-          <Route path="/admin-login" element={<AdminLogin />} />
-
-          {/* 🔐 PROTECTED */}
-          <Route
-            path="/"
-            element={
-              <ProtectedRoute>
-                <AdminLanding />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/blogs"
-            element={
-              <ProtectedRoute>
-                <AdminPanel />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/careers"
-            element={
-              <ProtectedRoute>
-                <CareerAdminPanel />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/reports"
-            element={
-              <ProtectedRoute>
-                <ViewReports />
-              </ProtectedRoute>
-            }
-          />
-
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
+        <AppLayout />
       </Router>
     </ToastProvider>
   );
